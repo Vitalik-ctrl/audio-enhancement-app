@@ -12,7 +12,7 @@ except Exception:
 
 class CMGANInference:
     def __init__(self, onnx_path: str, sr: int = 16000, n_fft: int = 400, hop: int = 100):
-        # Initialize ONNX runtime
+
         providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
         self.session = ort.InferenceSession(onnx_path, providers=providers)
         self.input_name = self.session.get_inputs()[0].name
@@ -22,7 +22,6 @@ class CMGANInference:
         self.hop = hop
         self.window = torch.hamming_window(self.n_fft)
         
-        # Process in 4-second chunks to prevent memory/CPU overload
         self.max_chunk_samples = 4 * self.sr 
         
     @staticmethod
@@ -43,41 +42,33 @@ class CMGANInference:
         """Processes a single small chunk of audio."""
         noisy_tensor = torch.from_numpy(chunk).unsqueeze(0).float()
         
-        # Normalize
         c = torch.sqrt(noisy_tensor.size(-1) / (torch.sum((noisy_tensor ** 2.0), dim=-1, keepdim=True) + 1e-8))
         noisy_norm = noisy_tensor * c
 
-        # STFT
         noisy_spec = torch.stft(noisy_norm, self.n_fft, self.hop, window=self.window, onesided=True, return_complex=True)
         noisy_spec = torch.view_as_real(noisy_spec)
         noisy_spec = self.power_compress(noisy_spec)
         
-        # Shape for ONNX model
         noisy_spec_np = noisy_spec.permute(0, 3, 2, 1).numpy()
 
-        # ONNX Inference
         est_real, est_imag = self.session.run(None, {self.input_name: noisy_spec_np})
 
-        # Post-processing
         est_real = torch.from_numpy(est_real)
         est_imag = torch.from_numpy(est_imag)
 
         est_spec_uncompress = self.power_uncompress(est_real, est_imag).squeeze(1)
         est_spec_complex = torch.complex(est_spec_uncompress[..., 0], est_spec_uncompress[..., 1])
 
-        # ISTFT
         est_audio = torch.istft(est_spec_complex.transpose(1, 2), self.n_fft, self.hop, window=self.window, onesided=True)
         return (est_audio / c).squeeze(0).numpy()
 
     def process_file(self, input_path: str, output_path: str):
-        # 1. Load and resample audio
         audio, orig_sr = sf.read(input_path)
         if len(audio.shape) > 1:
             audio = np.mean(audio, axis=1)
         if orig_sr != self.sr:
             audio = librosa.resample(audio, orig_sr=orig_sr, target_sr=self.sr)
 
-        # 2. Process in chunks
         total_samples = audio.shape[0]
         enhanced_chunks = []
         
@@ -87,17 +78,14 @@ class CMGANInference:
             end = min(start + self.max_chunk_samples, total_samples)
             chunk = audio[start:end]
             
-            # Skip chunks that are too small to run an STFT on
             if len(chunk) < self.n_fft:
                 continue
                 
             enhanced_chunk = self._process_chunk(chunk)
             enhanced_chunks.append(enhanced_chunk)
 
-        # 3. Recombine and save
         enhanced_audio = np.concatenate(enhanced_chunks, axis=-1)
 
-        # Prevent clipping
         peaks = np.max(np.abs(enhanced_audio))
         if peaks > 1.0:
             enhanced_audio /= peaks
