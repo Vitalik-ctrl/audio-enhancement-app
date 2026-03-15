@@ -1,0 +1,6 @@
+streamlit
+numpy
+onnxruntime
+soundfile
+librosa
+torch
