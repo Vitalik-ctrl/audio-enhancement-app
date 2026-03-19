@@ -11,8 +11,8 @@ st.set_page_config(
 
 st.title("CMGAN Audio Enhancer")
 st.markdown("""
-Upload a noisy audio file, and our CMGAN model will clean it up for you. 
-Perfect for removing background noise from voice recordings!
+Upload a noisy audio file, CMGAN model will clean it up. 
+Trained for removing background noise and echoes from voice recordings.
 """)
 
 @st.cache_resource
@@ -27,18 +27,26 @@ with col1:
     model_path = st.text_input("Path to ONNX Model", value="cmgan.onnx")
 
 with col2:
-    uploaded_file = st.file_uploader("Upload Noisy Audio", type=['wav', 'mp3', 'flac', 'ogg'])
-
-if uploaded_file is not None:
-    st.markdown("### Original Audio")
-    st.audio(uploaded_file)
+    tab_upload, tab_record = st.tabs(["Upload File", "Record Audio"])
     
+    with tab_upload:
+        uploaded_file = st.file_uploader("Upload Noisy Audio", type=['wav', 'mp3', 'flac', 'ogg'])
+        
+    with tab_record:
+        recorded_file = st.audio_input("Record Noisy Audio")
+
+audio_data = recorded_file if recorded_file else uploaded_file
+
+if audio_data is not None:
+    st.markdown("### Original Audio")
+    st.audio(audio_data)
+
     if st.button("Enhance Audio", type="primary"):
         if not os.path.exists(model_path):
             st.error(f"Model not found at `{model_path}`. Please check the path and try again.")
         else:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_in:
-                tmp_in.write(uploaded_file.getvalue())
+                tmp_in.write(audio_data.getvalue())
                 temp_in_path = tmp_in.name
                 
             temp_out_path = temp_in_path.replace(".wav", "_enhanced.wav")
@@ -55,11 +63,13 @@ if uploaded_file is not None:
                     
                     st.markdown("### Enhanced Audio")
                     st.audio(audio_bytes, format='audio/wav')
+
+                    download_name = f"enhanced_{audio_data.name}" if hasattr(audio_data, "name") else "enhanced_recording.wav"
                     
                     st.download_button(
                         label="Download Enhanced Audio",
                         data=audio_bytes,
-                        file_name=f"enhanced_{uploaded_file.name}",
+                        file_name=download_name,
                         mime="audio/wav"
                     )
                     
