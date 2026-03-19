@@ -30,7 +30,7 @@ with col2:
     tab_upload, tab_record = st.tabs(["Upload File", "Record Audio"])
     
     with tab_upload:
-        uploaded_file = st.file_uploader("Upload Noisy Audio", type=['wav', 'mp3', 'flac', 'ogg'])
+        uploaded_file = st.file_uploader("Upload Noisy Audio", type=['wav'])
         
     with tab_record:
         recorded_file = st.audio_input("Record Noisy Audio")
