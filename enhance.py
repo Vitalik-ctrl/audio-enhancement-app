@@ -13,7 +13,13 @@ except Exception:
 class CMGANInference:
     def __init__(self, onnx_path: str, sr: int = 16000, n_fft: int = 400, hop: int = 100):
 
-        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+        available_providers = ort.get_available_providers()
+
+        if 'CUDAExecutionProvider' in available_providers:
+            providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+        else:
+            providers = ['CPUExecutionProvider']
+
         self.session = ort.InferenceSession(onnx_path, providers=providers)
         self.input_name = self.session.get_inputs()[0].name
         
