@@ -23,8 +23,12 @@ def load_enhancer(path):
 st.divider()
 
 model_options = {
-    "Generalist New": "cmgan_generalist_final.onnx",
-    "Generalist Old": "cmgan.onnx"
+    "Generalist New": "models/cmgan_generalist_final.onnx",
+    "Generalist Old": "models/cmgan.onnx",
+    "Czech Specialist": "models/czech_specialist.onnx",
+    "English Specialist": "models/english_specialist.onnx",
+    "Additive Noise Specialist": "models/additive_specialist.onnx",
+    "Reverberation Specialist": "models/rir_specialist.onnx"
 }
 
 col1, col2 = st.columns([1, 2])
