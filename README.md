@@ -7,10 +7,8 @@ A Streamlit web application for removing background noise and echoes from audio 
 - **Multiple CMGAN Models**: Choose from 6 different models including generalist and specialist variants optimized for different scenarios and languages
 - **Flexible Input Methods**: Upload audio files or record directly from your microphone
 - **GPU Acceleration**: Automatic GPU support with CUDA (with CPU fallback)
-- **Real-time Processing**: Stream enhancement feedback with progress indicators
 - **Audio Format Support**: Process WAV and WV1 (NIST format) files
-- **Easy Download**: Download enhanced audio instantly after processing
-- **Web Interface**: User-friendly Streamlit interface, no CLI required
+- **Web Interface**: Streamlit interface
 
 ## Requirements
 
